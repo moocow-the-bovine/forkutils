@@ -1,0 +1,31 @@
+=pod
+
+README for directory forkutils
+
+=head1 ABSTRACT
+
+forkutils - generic daemon wrapper utility scripts
+
+=head1 DESCRIPTION
+
+This directory contains some generic utility scripts for working
+with persistent daemon programs.
+
+=head2 forkit.perl
+
+Generic SysV-style init script for creating a persistent daemon from
+a standalone non-forking program.  Takes care of forking the specified program
+to the background, redirecting stderr to a log file, and/or changing effective
+permissions of the daemon program.  The scripts F<forkme.perl>, F<forkme.py>
+are pseudo-daemons for testing and debugging purposes.
+
+=head2 watchdog.perl
+
+Software watchdog for background daemon processes.  Can itself be run
+as a persistent daemon under forkit.perl if desired.
+
+=head1 AUTHOR
+
+Bryan Jurish E<lt>jurish@uni-potsdam.deE<gt>
+
+=cut
