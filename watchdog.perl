@@ -7,6 +7,7 @@
 
 use Getopt::Long (':config'=>'no_ignore_case');
 use File::Basename qw(basename dirname);
+use Date::Format;
 use Pod::Usage;
 use strict;
 
@@ -67,6 +68,13 @@ sub vmsg {
   print STDERR @_ if ($level <= $verbose);
 }
 
+## undef = lmsg($level,@msg)
+##  + like vmsg() but prepends "$date $prog: " to message
+sub lmsg {
+  my $level = shift;
+  print STDERR (time2str("%Y-%m-%d %H:%M:%S %z",time), " $prog: ", @_) if ($level <= $verbose);
+}
+
 
 ##--------------------------------------------------------------
 ## Functions: utilities
@@ -88,7 +96,7 @@ sub slurp {
 ## $bool = probe_pid($pid,$cmd_regex)
 sub probe_pid {
   my ($pid,$cmdre) = @_;
-  vmsg(3,"$prog: probe_pid(pid=", ($pid||''), ", cmd=", ($cmdre||''), ")\n");
+  lmsg(3, "probe_pid(pid=", ($pid||''), ", cmd=", ($cmdre||''), ")\n");
   return 0 if (!defined($pid) || !-d "/proc/$pid");
   return 1 if (!$cmdre);
   my ($buf);
@@ -166,15 +174,15 @@ elsif (defined($watch_test)) {
 
 my ($running);
 while (1) {
-  vmsg(3,"$prog [$confstr]: probing...\n");
+  lmsg(3,"[$confstr]: probing...\n");
   $running = probe();
-  vmsg(2,"$prog [$confstr]: probe: ", ($running ? 'ok' : 'NOT ok'), "\n");
+  lmsg(2,"[$confstr]: probe: ", ($running ? 'ok' : 'NOT ok'), "\n");
   if ($running && defined($do_ifup)) {
-    vmsg(1,"$prog [$confstr]: probe succeeded, running '$do_ifup'\n");
+    lmsg(1,"[$confstr]: probe succeeded, running '$do_ifup'\n");
     system($do_ifup);
   }
   elsif (!$running && defined($do_ifdown)) {
-    vmsg(1,"$prog [$confstr]: probe failed, running '$do_ifdown'\n");
+    lmsg(1,"[$confstr]: probe failed, running '$do_ifdown'\n");
     system($do_ifdown);
   }
   sleep($sleep_interval);
