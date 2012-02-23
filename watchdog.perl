@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 ## File: watchdog.perl
-## Author: Bryan Jurish <jurish@uni-potsdam.de>
+## Author: Bryan Jurish <moocow@cpan.org>
 ## Description:
 ##  + generic software watchdog
 
@@ -273,7 +273,7 @@ and/or modify it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
-Bryan Jurish E<lt>jurish@uni-potsdam.deE<gt>
+Bryan Jurish E<lt>moocow@cpan.orgE<gt>
 
 =cut
 

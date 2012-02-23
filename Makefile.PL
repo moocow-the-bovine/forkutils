@@ -8,7 +8,7 @@ my $VERSION = 0.01;
 WriteMakefile
   (
    NAME		=> 'forkutils',
-   AUTHOR       => 'Bryan Jurish <jurish@uni-potsdam.de>',
+   AUTHOR       => 'Bryan Jurish <moocow@cpan.org>',
    ABSTRACT	=> 'Useful daemon utilities',
    VERSION	=> $VERSION,
 
@@ -18,6 +18,12 @@ WriteMakefile
 		    'Getopt::Long' => undef,
 		    'Pod::Usage' => undef,
 		    'English' => undef,
+
+		    ##-- for cronit.perl
+		    'POSIX' => undef,
+		    'File::Temp' => undef,
+		    'File::Copy' => undef,
+		    'IPC::Run' => undef,
 		   },
 
    EXE_FILES   => [glob('*.perl')],

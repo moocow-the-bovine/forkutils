@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 ## File: forkit.perl
-## Author: Bryan Jurish <jurish@uni-potsdam.de>
+## Author: Bryan Jurish <moocow@cpan.org>
 ## Description:
 ##  + generic forking daemon wrapper
 
@@ -311,13 +311,13 @@ forkit.perl - generic wrapper for non-forking daemons
  forkit.perl [OPTIONS] [--] {start|stop|restart|status|listall|killall} CMD...
 
  Options:
-  -help               # this help message\n",
-  -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=/dev/null)\n",
-  -pidfile=PIDFILE    # write PID to PIDFILE (default=none)\n",
-  -user=USER          # chuid to USER (default=none)\n",
-  -group=GROUP        # chgid to GROUP (default=none)\n",
-  -sleep-start=SECS   # sleep SECS and re-check for process on start (default=0:no check)\n",
-  -sleep-stop=SECS    # sleep SECS and re-check for process on stop (default=0:no check)\n",
+  -help               # this help message
+  -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=/dev/null)
+  -pidfile=PIDFILE    # write PID to PIDFILE (default=none)
+  -user=USER          # chuid to USER (default=none)
+  -group=GROUP        # chgid to GROUP (default=none)
+  -sleep-start=SECS   # sleep SECS and re-check for process on start (default=0:no check)
+  -sleep-stop=SECS    # sleep SECS and re-check for process on stop (default=0:no check)
 
 =cut
 
@@ -375,7 +375,7 @@ and/or modify it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
-Bryan Jurish E<lt>jurish@uni-potsdam.deE<gt>
+Bryan Jurish E<lt>moocow@cpan.orgE<gt>
 
 =cut
 

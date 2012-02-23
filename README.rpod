@@ -24,6 +24,12 @@ are pseudo-daemons for testing and debugging purposes.
 Software watchdog for background daemon processes.  Can itself be run
 as a persistent daemon under forkit.perl if desired.
 
+=head2 cronit.perl
+
+Wrapper script for use in cron jobs; appends a timestamp to all messages
+read from a user-specified command, logs them, and in case of abnormal
+exit status, dumps the entire log to stdout.
+
 =head1 AUTHOR
 
 Bryan Jurish E<lt>jurish@uni-potsdam.deE<gt>
