@@ -34,6 +34,11 @@ our ($help);
 our $t0 = time();
 our ($t1);
 
+BEGIN {
+  select(STDERR); $|=1;
+  select(STDOUT); $|=1;
+}
+
 ##--------------------------------------------------------------
 ## Command-Line
 GetOptions(##-- general
@@ -88,6 +93,7 @@ if (defined($logfile)) {
   ($logfh,$logfile) = File::Temp::tempfile('cronitXXXXXXXX', DIR=>($ENV{TMPDIR}||$ENV{TMP}||'/tmp'), SUFFIX=>'.log', UNLINK=>1);
   die("$prog: couldn't open temporary logfile: $!") if (!defined($logfh));
 }
+$logfh->autoflush(1);
 
 ##-- cache old stdout, stderr
 #open(OLDOUT, ">&", \*STDOUT) or die("$prog: couldn't cache original STDOUT: $!");
