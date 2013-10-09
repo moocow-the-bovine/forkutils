@@ -13,8 +13,12 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.01";
-our $SVNID   = q($Id$);
+our $VERSION = "0.02";
+our $SVNID   = q(
+  $HeadURL$
+  $Id$
+);
+
 
 our $user=undef;
 our $group=undef;
@@ -69,7 +73,7 @@ GetOptions(##-- general
 
 
 if ($version) {
-  print STDERR "${prog} version $VERSION ($SVNID)\n";
+  print STDERR "${prog} version ${VERSION}${SVNID}";
   exit 0;
 }
 pod2usage({-exitval=>0, -verbose=>0}) if ($help);
