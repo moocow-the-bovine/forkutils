@@ -322,6 +322,7 @@ forkit.perl - generic wrapper for non-forking daemons
 
  Options:
   -help               # this help message
+  -version	      # show version information and exit
   -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=/dev/null)
   -pidfile=PIDFILE    # write PID to PIDFILE (default=none)
   -user=USER          # chuid to USER (default=none)

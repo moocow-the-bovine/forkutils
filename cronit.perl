@@ -159,6 +159,7 @@ cronit.perl - generic logging wrapper for cron jobs
 
  Options:
   -help               # this help message
+  -version	      # show version information and exit
   -verbose=LEVEL      # set verbosity level (default=1)
   -quiet              # alias for -verbose=0
   -dir=DIRECTORY      # set working directory

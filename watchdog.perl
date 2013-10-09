@@ -13,7 +13,11 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.01";
+our $VERSION = "0.02";
+our $SVNID   = q(
+  $HeadURL$
+  $Id$
+);
 
 ##-- basic sanity checks
 our $sleep_interval = 300;  ##-- sleep interval (seconds)
@@ -29,7 +33,7 @@ our $do_ifdown  = undef;
 
 our $prog = basename($0);
 our $verbose=1;
-our ($help);
+our ($help,$version);
 
 
 ##--------------------------------------------------------------
@@ -37,6 +41,7 @@ our ($help);
 GetOptions(##-- general
 	   'help|h' => \$help,
 	   'verbose|v=i' => \$verbose,
+	   'version|V' => \$version,
 	   'quiet|q' => sub { $verbose=0; },
 
 	   ##-- checking
@@ -53,7 +58,10 @@ GetOptions(##-- general
 	   'on-failure|ifdown=s' => \$do_ifdown,
 	  );
 
-
+if ($version) {
+  print STDERR "${prog} version ${VERSION}${SVNID}";
+  exit 0;
+}
 pod2usage({-exitval=>0, -verbose=>0}) if ($help);
 pod2usage({-exitval=>1, -verbose=>0, -msg=>'You must specify one of the -pid , -cmdline , or -test options!'})
   if (!(defined($watch_pid) || defined($watch_pfile) || defined($watch_cmd) || defined($watch_test)));
@@ -203,19 +211,20 @@ watchdog.perl - generic software watchdog
  watchdog.perl [OPTIONS]
 
  General Options:
-  -help               ##-- this help message
-  -verbose LEVEL      ##-- set verbosity level (default=1)
-  -quiet              ##-- alias for -verbose=0
+  -help               # this help message
+  -version	      # show version information and exit
+  -verbose LEVEL      # set verbosity level (default=1)
+  -quiet              # alias for -verbose=0
 
  Target Selection Options:
-  -pid PID            ##-- set target process with pid=PID
-  -pidfile PIDFILE    ##-- read target process pid from PIDFILE at each probe
-  -cmdline CMDLINE    ##-- match target process CMDLINE (also with -pid or -pidfile)
-  -test COMMANDS      ##-- check with COMMANDS (0 exit status indicates success)
+  -pid PID            # set target process with pid=PID
+  -pidfile PIDFILE    # read target process pid from PIDFILE at each probe
+  -cmdline CMDLINE    # match target process CMDLINE (also with -pid or -pidfile)
+  -test COMMANDS      # check with COMMANDS (0 exit status indicates success)
 
  Post-Probe Actions:
-  -ifup COMMANDS      ##-- run COMMANDS after successful probe
-  -ifdown COMMANDS    ##-- run COMMANDS after a failed probe
+  -ifup COMMANDS      # run COMMANDS after successful probe
+  -ifdown COMMANDS    # run COMMANDS after a failed probe
 
 =cut
 
