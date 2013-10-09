@@ -14,6 +14,7 @@ use strict;
 ##--------------------------------------------------------------
 ## Globals
 our $VERSION = "0.01";
+our $SVNID   = q($Id$);
 
 our $user=undef;
 our $group=undef;
@@ -29,7 +30,7 @@ our $sleep_stop=0;
 
 our $prog = basename($0);
 our $verbose=1;
-our ($help);
+our ($help,$version);
 
 
 ##--------------------------------------------------------------
@@ -52,8 +53,9 @@ sub show_config {
 GetOptions(##-- general
 	   'help|h' => \$help,
 	   'verbose|v=i' => \$verbose,
+	   'version|V' => \$version,
 	   'quiet|q' => sub { $verbose=0; },
-	   
+
 	   ##-- checking
 	   'sleep-start|ss=i' => \$sleep_start,
 	   'sleep-kill|sk=i'  => \$sleep_stop,
@@ -66,6 +68,10 @@ GetOptions(##-- general
 	  );
 
 
+if ($version) {
+  print STDERR "${prog} version $VERSION ($SVNID)\n";
+  exit 0;
+}
 pod2usage({-exitval=>0, -verbose=>0}) if ($help);
 pod2usage({-exitval=>0, -verbose=>0, -msg=>'No action specified!'}) if (!@ARGV);
 $act = shift(@ARGV);

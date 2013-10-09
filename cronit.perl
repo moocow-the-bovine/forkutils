@@ -17,18 +17,20 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.01";
+our $VERSION = "0.02";
+our $SVNID   = q($HeadURL$ $Id$);
 
 our $logfile=undef;
 our ($logfh);
 our $prefix='%F %T ';
+our $workdir=undef;
 
 our @cmd=qw();
 
 our $prog   =basename($0);
 our $verbose=0;
 our $ignore_child_errors =0;
-our ($help);
+our ($help,$version);
 
 ##-- timing
 our $t0 = time();
@@ -44,19 +46,26 @@ BEGIN {
 GetOptions(##-- general
 	   'help|h' => \$help,
 	   'verbose|v=i' => \$verbose,
+	   'version|V' => \$version,
 	   'quiet|q' => sub { $verbose=0; },
 
 	   ##-- process tweaking
+	   'directory|dir|d|chdir|cd=s' => \$workdir,
 	   'logfile|log|l=s' => \$logfile,
 	   'prefix|p=s' => \$prefix,
 	   'ignore-child-errors|ignore-errors|ignore|i!' => \$ignore_child_errors,
 	  );
 
 
+if ($version) {
+  print STDERR "${prog} version $VERSION ($SVNID)\n";
+  exit 0;
+}
 pod2usage({-exitval=>0, -verbose=>0}) if ($help);
 @cmd = @ARGV;
 
 pod2usage({-exitval=>1, -verbose=>0, -msg=>'You must specify a command to run!'}) if (!@cmd);
+
 
 ##======================================================================
 ## Subroutines
@@ -83,6 +92,11 @@ sub logout {
 
 ##======================================================================
 ## MAIN
+
+##-- change directory if requested
+if ($workdir) {
+  chdir($workdir) or die("$prog: could not chdir to '$workdir': $!");
+}
 
 ##-- get logfile
 our $logtmp=0;
@@ -144,6 +158,7 @@ cronit.perl - generic logging wrapper for cron jobs
   -help               # this help message
   -verbose=LEVEL      # set verbosity level (default=1)
   -quiet              # alias for -verbose=0
+  -dir=DIRECTORY      # set working directory
   -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=temporary)
   -prefix=PREFIX      # format logfile with strftime() PREFIX (default='%F %T ')
   -ignore-errors      # don't dump log if subprocess exits with nonzero status (default=do)
