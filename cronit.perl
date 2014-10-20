@@ -17,7 +17,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -54,9 +54,10 @@ GetOptions(##-- general
 
 	   ##-- process tweaking
 	   'directory|dir|d|chdir|cd=s' => \$workdir,
-	   'logfile|log|l=s' => \$logfile,
+	   'logfile|lf|log|l=s' => \$logfile,
 	   'prefix|p=s' => \$prefix,
 	   'ignore-child-errors|ignore-errors|ignore|i!' => \$ignore_child_errors,
+	   'dump-errors|dump!' => sub {$ignore_child_errors=!$_[1]},
 	  );
 
 
