@@ -114,24 +114,15 @@ if (defined($logfile)) {
 }
 $logfh->autoflush(1);
 
-## report configuration
-logout("INFO: cmd = $cmd_str\n"
-       "INFO: cwd = ", cwd(), "\n",
-       "INFO: logfile = $logfile\n",
-       "INFO: ignore_child_errors = ", ($ignore_errors ? 1 : 0), "\n",
+##-- report configuration
+our $cmd_str = join(' ', map {/\s/ ? qq("$_") : $_} @cmd);
+logout("$prog: cmd=$cmd_str\n",
+       "$prog: cwd=", cwd(), "\n",
+       "$prog: logfile=$logfile\n",
+       "$prog: ignore_child_errors=", ($ignore_child_errors ? 1 : 0), "\n",
       );
 
-
-##-- cache old stdout, stderr
-#open(OLDOUT, ">&", \*STDOUT) or die("$prog: couldn't cache original STDOUT: $!");
-#open(OLDERR, ">&", \*STDERR) or die("$prog: couldn't cache original STDERR: $!");
-
-##-- redirect stdout, stderr to logfile
-#open(STDOUT, ">&", $logfh) or die("$prog: couldn't redirect STDOUT to logfile '$logfile': $!");
-#open(STDERR, ">&", $logfh) or die("$prog: couldn't redirect STDERR to logfile '$logfile': $!");
-
 ##-- open subprocess
-our $cmd_str = join(' ', map {/\s/ ? qq("$_") : $_} @cmd);
 IPC::Run::run(\@cmd, '<', \undef, '>&', \&logout);
 our $cmd_rc = ($?>>8);
 
