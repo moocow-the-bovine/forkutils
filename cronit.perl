@@ -13,11 +13,12 @@ use File::Temp;
 use File::Copy;
 use IPC::Run;
 use IO::File;
+use Cwd;
 use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -57,7 +58,7 @@ GetOptions(##-- general
 	   'logfile|lf|log|l=s' => \$logfile,
 	   'prefix|p=s' => \$prefix,
 	   'ignore-child-errors|ignore-errors|ignore|i!' => \$ignore_child_errors,
-	   'dump-errors|dump!' => sub {$ignore_child_errors=!$_[1]},
+	   'dump-errors|logdump|ld|dump!' => sub {$ignore_child_errors=!$_[1]},
 	  );
 
 
@@ -112,6 +113,14 @@ if (defined($logfile)) {
   die("$prog: couldn't open temporary logfile: $!") if (!defined($logfh));
 }
 $logfh->autoflush(1);
+
+## report configuration
+logout("INFO: cmd = $cmd_str\n"
+       "INFO: cwd = ", cwd(), "\n",
+       "INFO: logfile = $logfile\n",
+       "INFO: ignore_child_errors = ", ($ignore_errors ? 1 : 0), "\n",
+      );
+
 
 ##-- cache old stdout, stderr
 #open(OLDOUT, ">&", \*STDOUT) or die("$prog: couldn't cache original STDOUT: $!");
