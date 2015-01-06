@@ -166,7 +166,7 @@ cronit.perl - generic logging wrapper for cron jobs
   -dir=DIRECTORY      # set working directory
   -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=temporary)
   -prefix=PREFIX      # format logfile with strftime() PREFIX (default='%F %T ')
-  -ignore-errors      # don't dump log if subprocess exits with nonzero status (default=do)
+  -[no]dump           # don't/do dump log to stdout if CMD exits with nonzero status (default=do)
 
 =cut
 
