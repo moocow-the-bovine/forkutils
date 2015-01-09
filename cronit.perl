@@ -34,6 +34,7 @@ our @cmd=qw();
 our $prog   =basename($0);
 our $verbose=0;
 our $ignore_child_errors =0;
+our $log_append =0;
 our ($help,$version);
 
 ##-- timing
@@ -56,6 +57,8 @@ GetOptions(##-- general
 	   ##-- process tweaking
 	   'directory|dir|d|chdir|cd=s' => \$workdir,
 	   'logfile|lf|log|l=s' => \$logfile,
+	   'log-append|append|la|a!' => \$log_append,
+	   'log-truncate|truncate|t!' => sub {$log_append=!$_[1]},
 	   'prefix|p=s' => \$prefix,
 	   'ignore-child-errors|ignore-errors|ignore|i!' => \$ignore_child_errors,
 	   'dump-errors|logdump|ld|dump!' => sub {$ignore_child_errors=!$_[1]},
@@ -104,9 +107,10 @@ if ($workdir) {
 }
 
 ##-- get logfile
-our $logtmp=0;
+our $logtmp  = 0;
 if (defined($logfile)) {
-  $logfh = IO::File->new(">$logfile") or die("$prog: open failed for logfile '$logfile': $!");
+  my $logmode = $log_append ? '>>' : '>';
+  $logfh = IO::File->new("${logmode}${logfile}") or die("$prog: open failed for logfile '$logfile', mode $logmode: $!");
 } else {
   $logtmp = 1;
   ($logfh,$logfile) = File::Temp::tempfile('cronitXXXXXXXX', DIR=>($ENV{TMPDIR}||$ENV{TMP}||'/tmp'), SUFFIX=>'.log', UNLINK=>1);
@@ -119,6 +123,7 @@ our $cmd_str = join(' ', map {/\s/ ? qq("$_") : $_} @cmd);
 logout("$prog: cmd=$cmd_str\n",
        "$prog: cwd=", cwd(), "\n",
        "$prog: logfile=$logfile\n",
+       "$prog: log_append=", ($log_append ? 'yes' : 'no'), "\n",
        "$prog: ignore_child_errors=", ($ignore_child_errors ? 1 : 0), "\n",
       );
 
@@ -166,7 +171,9 @@ cronit.perl - generic logging wrapper for cron jobs
   -dir=DIRECTORY      # set working directory
   -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=temporary)
   -prefix=PREFIX      # format logfile with strftime() PREFIX (default='%F %T ')
-  -[no]dump           # don't/do dump log to stdout if CMD exits with nonzero status (default=do)
+  -[no]dump           # do/don't dump log to stdout if CMD exits with nonzero status (default=do)
+  -[no]append	      # do/don't append to existing LOGFILE (default=don't)
+  -[no]truncate	      # inverse of -[no]append
 
 =cut
 
@@ -210,10 +217,12 @@ Not yet written.
 
 =head1 COPYRIGHT
 
-Copyright (c) 2012, Bryan Jurish.  All rights reserved.
+Copyright (c) 2012-2014, Bryan Jurish.  All rights reserved.
 
 This package is free software.  You may redistribute it
-and/or modify it under the same terms as Perl itself.
+and/or modify it under the same terms as Perl itself, either
+Perl 5.14.2, or at your option any later version of Perl 5
+available.
 
 =cut
 
