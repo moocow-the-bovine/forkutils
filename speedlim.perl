@@ -53,7 +53,7 @@ EOF
 sub min2 { return $_[0] < $_[1] ? $_[0] : $_[1]; }
 sub max2 { return $_[0] > $_[1] ? $_[0] : $_[1]; }
 
-my $blksize = 2;
+my $blksize = 1024;
 sub last_line {
   my $fh = shift;
   ##-- get final chunk of file
