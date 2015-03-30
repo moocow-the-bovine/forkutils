@@ -21,10 +21,12 @@ BEGIN {
 
 our $prog = basename($0);
 my $interval = 1;
+my $watch = 0;
 my ($help);
 GetOptions(##-- general
 	   'help|h' => \$help,
 	   'interval|i|limit|l=i' => \$interval,
+	   'watch|w!' => \$watch,
 	  );
 
 if ($help) {
@@ -35,6 +37,7 @@ Usage: $prog \[OPTIONS] [FILE]
  Options:
    -help        # this help message
    -limit SECS  # maximum inter-message interval (default=1)
+   -[no]watch   # do/don't continue at EOF (default=-nowatch)
 
 EOF
   exit 0;
@@ -53,7 +56,7 @@ sub cb_timer {
 sub cb_io {
   my $line = <IN>;
   if (!defined($line)) {
-    unloop_all(0);
+    unloop_all(0) if (!$watch);
   } else {
     $msg = $line;
   }
