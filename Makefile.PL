@@ -26,7 +26,7 @@ WriteMakefile
 		    'IPC::Run' => undef,
 
 		    ##-- for speedlim.perl
-		    'speedlim.perl',
+		    'Event' => undef, # 1.21
 		   },
 
    EXE_FILES   => [grep {$_ !~ /drip/} glob('*.perl')],
