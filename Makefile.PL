@@ -24,7 +24,10 @@ WriteMakefile
 		    'File::Temp' => undef,
 		    'File::Copy' => undef,
 		    'IPC::Run' => undef,
+
+		    ##-- for speedlim.perl
+		    'speedlim.perl',
 		   },
 
-   EXE_FILES   => [glob('*.perl')],
+   EXE_FILES   => [grep {$_ !~ /drip/} glob('*.perl')],
   );
