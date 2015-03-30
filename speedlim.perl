@@ -26,7 +26,7 @@ my $watch = 0;
 my ($help);
 GetOptions(##-- general
 	   'help|h' => \$help,
-	   'interval|i|limit|l=i' => \$interval,
+	   'interval|i|limit|l|poll|p=i' => \$interval,
 	   'watch|w!' => \$watch,
 	  );
 
@@ -53,7 +53,7 @@ EOF
 sub min2 { return $_[0] < $_[1] ? $_[0] : $_[1]; }
 sub max2 { return $_[0] > $_[1] ? $_[0] : $_[1]; }
 
-my $blksize = 1024;
+my $blksize = 2;
 sub last_line {
   my $fh = shift;
   ##-- get final chunk of file
@@ -64,6 +64,8 @@ sub last_line {
     seek($fh, -$chunksize, SEEK_CUR);
     unshift(@bufs,'');
     read($fh, $bufs[0], $chunksize);
+    chomp($bufs[0]) if (@bufs==1);
+    seek($fh, -$chunksize, SEEK_CUR);
   }
   $buf = join('',@bufs);
   chomp($buf);
