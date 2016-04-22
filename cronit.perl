@@ -18,7 +18,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.05";
+our $VERSION = "0.06";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -120,8 +120,10 @@ $logfh->autoflush(1);
 
 ##-- report configuration
 our $cmd_str = join(' ', map {/\s/ ? qq("$_") : $_} @cmd);
+my $user     = getlogin() || [getpwuid($<)]->[0];
 logout("$prog: cmd=$cmd_str\n",
        "$prog: cwd=", cwd(), "\n",
+       "$prog: user=$user\n",
        "$prog: logfile=$logfile\n",
        "$prog: log_append=", ($log_append ? 'yes' : 'no'), "\n",
        "$prog: ignore_child_errors=", ($ignore_child_errors ? 1 : 0), "\n",
