@@ -7,6 +7,7 @@
 
 use Getopt::Long (':config'=>'no_ignore_case');
 use File::Basename qw(basename dirname);
+use Sys::Hostname;
 use POSIX qw(strftime);
 use Pod::Usage;
 use File::Temp;
@@ -18,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.06";
+our $VERSION = "0.07";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -121,9 +122,12 @@ $logfh->autoflush(1);
 ##-- report configuration
 our $cmd_str = join(' ', map {/\s/ ? qq("$_") : $_} @cmd);
 my $user     = getlogin() || [getpwuid($<)]->[0];
+my $host     = Sys::Hostname::hostname();
+my $hostname = (gethostbyname($host || 'localhost'))[0] || $host || '(unknown)';
 logout("$prog: cmd=$cmd_str\n",
        "$prog: cwd=", cwd(), "\n",
        "$prog: user=$user\n",
+       "$prog: host=$hostname\n",
        "$prog: logfile=$logfile\n",
        "$prog: log_append=", ($log_append ? 'yes' : 'no'), "\n",
        "$prog: ignore_child_errors=", ($ignore_child_errors ? 1 : 0), "\n",
