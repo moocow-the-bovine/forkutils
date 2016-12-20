@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.07";
+our $VERSION = "0.08";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -138,8 +138,17 @@ IPC::Run::run(\@cmd, '<', \undef, '>&', \&logout);
 our $cmd_rc = ($?>>8);
 
 if ($cmd_rc==0) {
+  my $elapsed_s = time()-$t0;
+  my ($elapsed_str);
+  if ($elapsed_s >= 24*60*60) {
+    my $elapsed_days = int($elapsed_s / (24*60*60));
+    $elapsed_s      -= ($elapsed_days*24*60*60);
+    $elapsed_str     = "$elapsed_days day(s) + ";
+  }
+  $elapsed_str .= strftime("%H:%M:%S", gmtime($elapsed_s))." (HH:MM:SS)";
+
   logout("$prog: command ($cmd_str) exited normally\n",
-	 "$prog: total time elapsed = ", strftime("%H:%M:%S", gmtime(time()-$t0)), " (HH:MM:SS)\n",
+	 "$prog: total time elapsed = $elapsed_str\n",
 	);
   $logfh->close();
 } else {
