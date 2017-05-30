@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cat Makefile.PL
 echo -n "foo"
 #sleep 1
 echo -n "bar" >&2

@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.09";
+our $VERSION = "0.10";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -39,6 +39,7 @@ our $log_append =0;
 our $log_gzip=0;
 our @prune_globs = qw();
 our $prune_age = 7;
+our $ctxlines = 0;
 our ($help,$version);
 
 ##-- timing
@@ -61,7 +62,8 @@ GetOptions(##-- general
 	   ##-- process tweaking
 	   'directory|dir|d|chdir|cd=s' => \$workdir,
 	   'ignore-child-errors|ignore-errors|ignore|i!' => \$ignore_child_errors,
-	   'dump-errors|logdump|ld|dump!' => sub {$ignore_child_errors=!$_[1]},
+	   'dump-errors|logdump|ld|dump|D!' => sub {$ignore_child_errors=!$_[1]},
+	   'context-lines|context|ctx|cl|L=i' => \$ctxlines,
 
 	   ##-- logging
 	   'log-prefix|logprefix|lp|prefix|p=s' => \$prefix,
@@ -71,7 +73,7 @@ GetOptions(##-- general
 	   'log-gzip|log-zip|lz|z!' => \$log_gzip,
 	   'log-prune-glob|prune-glob|lpg|pg=s' => \@prune_globs,
 	   'log-prune-age|prune-age|lpa|pa=i' => \$prune_age,
-	   'nolog-prune|noprune|nop' => sub { @prune_globs=qw() },
+	   'nolog-prune|noprune|nop|P' => sub { @prune_globs=qw() },
 	  );
 
 
@@ -105,6 +107,39 @@ sub logout {
   }
   $logfh->print($msg);
   print STDOUT $msg if ($verbose >= 1);
+}
+
+## $bool = dumplog($logfile)
+##  + dump $logfile to STDOUT, honoring $ctxlines
+sub dumplog {
+  my $logfile = shift;
+
+  ##-- full dump
+  return File::Copy::copy($logfile,\*STDOUT) if ($ctxlines <= 0);
+
+  ##-- dump up to $ctxlines initial, final lines of $logfile
+  open(my $logfh, "<$logfile")
+    or die("$prog: failed to open '$logfile' for dump: $!");
+
+  ##-- dump initial context
+  my $n = 0;
+  while ($n < $ctxlines && defined($_=<$logfh>)) {
+    print $_;
+    ++$n if (!/\S+ \S+ \Q$prog\E: /);
+  }
+
+  ##-- churn through remaining lines, buffering as we go
+  if ($n == $ctxlines) {
+    my @buf = qw();
+    while (defined($_=<$logfh>)) {
+      ++$n;
+      shift(@buf) if (@buf==$ctxlines);
+      push(@buf,$_);
+    }
+    print "... [", ($n-$ctxlines-@buf), " line(s) truncated] ...\n";
+    print @buf;
+  }
+  $logfh->close();
 }
 
 
@@ -142,6 +177,7 @@ logout("$prog: cmd=$cmd_str\n",
        "$prog: user=$user\n",
        "$prog: host=$hostname\n",
        "$prog: logfile=$logfile\n",
+       "$prog: log_gzip=", ($log_gzip ? 'yes' : 'no'), "\n",
        "$prog: log_append=", ($log_append ? 'yes' : 'no'), "\n",
        "$prog: prune_globs=", join(' ', @prune_globs), "\n",
        "$prog: prune_age=$prune_age \[~ ".strftime("%F %T",localtime($prune_min_mtime))."]\n",
@@ -149,9 +185,13 @@ logout("$prog: cmd=$cmd_str\n",
       );
 
 ##-- prune?
-foreach my $glob (@prune_globs) {
+my %pruned = qw();
+foreach my $glob (@prune_globs, ($log_gzip ? (map {"$_.gz"} @prune_globs) : qw())) {
+  next if (exists($pruned{$glob}));
+  $pruned{$glob}=undef;
+
   logout("$prog: pruning old file(s): $glob\n");
-  foreach my $file (grep {$_ ne $logfile} glob($glob)) {
+  foreach my $file (grep {$_ ne $logfile} (glob($glob), $log_gzip ? "$glob.gz" : qw())) {
     my $mtime = (stat($file))[9];
     if ($mtime < $prune_min_mtime) {
       logout("$prog: PRUNE $file\n");
@@ -188,10 +228,10 @@ if ($cmd_rc==0) {
   if (!$ignore_child_errors) {
     print
       ("$prog: command ($cmd_str) exited abnormally with status $cmd_rc\n",
-       "$prog: log dump ($logfile):\n",
+       "$prog: log dump ($logfile", ($ctxlines>=0 ? ", $ctxlines context line(s)" : qw()), "):\n",
        ("-" x 80), "\n",
       );
-    File::Copy::copy($logfile,\*STDOUT);
+    dumplog($logfile);
   }
 }
 
@@ -217,20 +257,22 @@ cronit.perl - generic logging wrapper for cron jobs
  cronit.perl [OPTIONS] [--] CMD...
 
  Options:
-  -help               # this help message
-  -version	      # show version information and exit
-  -verbose=LEVEL      # set verbosity level (default=0)
-  -quiet              # alias for -verbose=0
-  -dir=DIRECTORY      # set working directory
-  -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=temporary)
-  -prefix=PREFIX      # format logfile with strftime() PREFIX (default='%F %T ')
-  -[no]dump           # do/don't dump log to stdout if CMD exits with nonzero status (default=do)
-  -[no]append	      # do/don't append to existing LOGFILE (default=don't)
-  -[no]truncate	      # inverse of -[no]append
-  -[no]gzip           # do/don't gzip successful logs (default=don't)
-  -prune-glob=GLOB    # select old log-files for potential pruning (default=none)
-  -prune-age=DAYS     # prune old files with mtime >= DAYS day(s)
-  -noprune            # don't prune any old files (default)
+  -h,  -help               # this help message
+  -V,  -version            # show version information and exit
+  -v,  -verbose=LEVEL      # set verbosity level (default=0)
+  -q,  -quiet              # alias for -verbose=0
+  -d,  -dir=DIRECTORY      # set working directory
+  -l,  -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=temporary)
+  -L,  -lines=LINES        # number of context lines to dump on error (default=-1: all)
+  -p,  -prefix=PREFIX      # format logfile with strftime() PREFIX (default='%F %T ')
+  -D,  -[no]dump           # do/don't dump log to stdout if CMD exits with nonzero status (default=do)
+  -i,  -[no]ignore-errors  # inverse of -[no]dump
+  -a,  -[no]append         # do/don't append to existing LOGFILE (default=don't)
+  -t,  -[no]truncate       # inverse of -[no]append
+  -z,  -[no]gzip           # do/don't gzip successful logs (default=don't)
+  -pg, -prune-glob=GLOB    # select old log-files for potential pruning (default=none)
+  -pa, -prune-age=DAYS     # prune old files with mtime >= DAYS day(s)
+  -P,  -noprune            # don't prune any old files (default)
 
  Bells & Whistles:
   LOGFILE may contain substrings {DATE}, {TIME}, and/or {DATETIME}, which will be replaced
