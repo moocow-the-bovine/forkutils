@@ -13,7 +13,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.02";
+our $VERSION = "0.11";
 our $SVNID   = q(
   $HeadURL$
   $Id$
