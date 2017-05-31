@@ -193,7 +193,7 @@ foreach my $glob (@prune_globs, ($log_gzip ? (map {"$_.gz"} @prune_globs) : qw()
   logout("$prog: pruning old file(s): $glob\n");
   foreach my $file (grep {$_ ne $logfile} (glob($glob), $log_gzip ? "$glob.gz" : qw())) {
     my $mtime = (stat($file))[9];
-    if ($mtime < $prune_min_mtime) {
+    if (defined($mtime) && $mtime < $prune_min_mtime) {
       logout("$prog: PRUNE $file\n");
       unlink($file)
 	or logout("$prog: WARNING: failed to prune file '$file': $!");
