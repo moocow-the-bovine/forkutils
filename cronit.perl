@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.10";
+our $VERSION = "0.11";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -38,7 +38,7 @@ our $ignore_child_errors =0;
 our $log_append =0;
 our $log_gzip=0;
 our @prune_globs = qw();
-our $prune_age = 7;
+our $prune_age = -1;
 our $ctxlines = 0;
 our ($help,$version);
 
@@ -73,7 +73,7 @@ GetOptions(##-- general
 	   'log-gzip|log-zip|lz|z!' => \$log_gzip,
 	   'log-prune-glob|prune-glob|lpg|pg=s' => \@prune_globs,
 	   'log-prune-age|prune-age|lpa|pa=i' => \$prune_age,
-	   'nolog-prune|noprune|nop|P' => sub { @prune_globs=qw() },
+	   'nolog-prune|noprune|nop|P' => sub { $prune_age=-1; @prune_globs=qw() },
 	  );
 
 
@@ -154,14 +154,25 @@ if ($workdir) {
 ##-- get logfile
 our $logtmp  = 0;
 if (defined($logfile)) {
-  my $logmode = $log_append ? '>>' : '>';
+  ##-- auto-prune
+  my $glob = $logfile;
+  $glob =~ s{\{(?:DATE|TIME|DATETIME)\}}{*}g;
+  push(@prune_globs,$glob) if (!@prune_globs && $glob ne $logfile);
+
+  ##-- logfile escapes
   $logfile =~ s{{DATE}}{strftime("%F",localtime(time))}e;
   $logfile =~ s{{TIME}}{strftime("%T",localtime(time))}e;
-  $logfile =~ s{{DATETIME}}{strftime("%F_%T",localtime(time))}e;
+  $logfile =~ s{{DATETIME}}{strftime("%F-%H%M%S",localtime(time))}e;
+
+  ##-- open log filehandle
+  my $logmode = $log_append ? '>>' : '>';
   $logfh = IO::File->new("${logmode}${logfile}") or die("$prog: open failed for logfile '$logfile', mode $logmode: $!");
 } else {
+  ##-- log to tempfile
   $logtmp = 1;
-  ($logfh,$logfile) = File::Temp::tempfile('cronitXXXXXXXX', DIR=>($ENV{TMPDIR}||$ENV{TMP}||'/tmp'), SUFFIX=>'.log', UNLINK=>1);
+  my $tmpdir = ($ENV{TMPDIR}||$ENV{TMP}||'/tmp');
+  push(@prune_globs, "$tmpdir/cronit*.log") if (!@prune_globs); ##-- auto-prune
+  ($logfh,$logfile) = File::Temp::tempfile('cronitXXXXXXXX', DIR=>$tmpdir, SUFFIX=>'.log', UNLINK=>1);
   die("$prog: couldn't open temporary logfile: $!") if (!defined($logfh));
 }
 $logfh->autoflush(1);
@@ -171,7 +182,8 @@ our $cmd_str = join(' ', map {/\s/ ? qq("$_") : $_} @cmd);
 my $user     = getlogin() || [getpwuid($<)]->[0];
 my $host     = Sys::Hostname::hostname();
 my $hostname = (gethostbyname($host || 'localhost'))[0] || $host || '(unknown)';
-my $prune_min_mtime = time()-($prune_age*24*60*60);
+my $prune_min_mtime = $prune_age >= 0 ? (time()-($prune_age*24*60*60)) : undef;
+my $prune_timestamp = $prune_age >= 0 ? strftime("%F %T",localtime($prune_min_mtime)) : 'none';
 logout("$prog: cmd=$cmd_str\n",
        "$prog: cwd=", cwd(), "\n",
        "$prog: user=$user\n",
@@ -180,30 +192,31 @@ logout("$prog: cmd=$cmd_str\n",
        "$prog: log_gzip=", ($log_gzip ? 'yes' : 'no'), "\n",
        "$prog: log_append=", ($log_append ? 'yes' : 'no'), "\n",
        "$prog: prune_globs=", join(' ', @prune_globs), "\n",
-       "$prog: prune_age=$prune_age \[~ ".strftime("%F %T",localtime($prune_min_mtime))."]\n",
+       "$prog: prune_age=$prune_age \[~ $prune_timestamp]\n",
        "$prog: ignore_child_errors=", ($ignore_child_errors ? 1 : 0), "\n",
       );
 
 ##-- prune?
-my %pruned = qw();
-foreach my $glob (@prune_globs, ($log_gzip ? (map {"$_.gz"} @prune_globs) : qw())) {
-  next if (exists($pruned{$glob}));
-  $pruned{$glob}=undef;
+if ($prune_age >= 0) {
+  my %pruned = qw();
+  foreach my $glob (@prune_globs, ($log_gzip ? (map {"$_.gz"} @prune_globs) : qw())) {
+    next if (exists($pruned{$glob}));
+    $pruned{$glob}=undef;
 
-  logout("$prog: pruning old file(s): $glob\n");
-  foreach my $file (grep {$_ ne $logfile} (glob($glob), $log_gzip ? "$glob.gz" : qw())) {
-    my $mtime = (stat($file))[9];
-    if (defined($mtime) && $mtime < $prune_min_mtime) {
-      logout("$prog: PRUNE $file\n");
-      unlink($file)
-	or logout("$prog: WARNING: failed to prune file '$file': $!");
+    logout("$prog: pruning stale file(s): $glob\n");
+    foreach my $file (grep {-w $_ && $_ ne $logfile} (glob($glob), $log_gzip ? "$glob.gz" : qw())) {
+      my $mtime = (stat($file))[9];
+      if (defined($mtime) && $mtime < $prune_min_mtime) {
+	logout("$prog: PRUNE $file\n");
+	unlink($file)
+	  or logout("$prog: WARNING: failed to prune file '$file': $!\n");
+      }
+      #else {
+      #  logout("$prog: KEEP $file\n");
+      #}
     }
-    #else {
-    #  logout("$prog: KEEP $file\n");
-    #}
   }
 }
-
 
 ##-- open subprocess
 IPC::Run::run(\@cmd, '<', \undef, '>&', \&logout);
@@ -270,8 +283,8 @@ cronit.perl - generic logging wrapper for cron jobs
   -a,  -[no]append         # do/don't append to existing LOGFILE (default=don't)
   -t,  -[no]truncate       # inverse of -[no]append
   -z,  -[no]gzip           # do/don't gzip successful logs (default=don't)
-  -pg, -prune-glob=GLOB    # select old log-files for potential pruning (default=none)
-  -pa, -prune-age=DAYS     # prune old files with mtime >= DAYS day(s)
+  -pg, -prune-glob=GLOB    # select old log-files for potential pruning (default from LOGFILE)
+  -pa, -prune-age=DAYS     # prune old files with mtime >= DAYS day(s) (default=-1: no pruning)
   -P,  -noprune            # don't prune any old files (default)
 
  Bells & Whistles:
