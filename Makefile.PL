@@ -1,6 +1,6 @@
 use ExtUtils::MakeMaker;
 
-my $VERSION = 0.11;
+my $VERSION = 0.12;
 
 ##----------------------------------------------------------------------
 ## MAIN
@@ -27,6 +27,9 @@ WriteMakefile
 
 		    ##-- for speedlim.perl
 		    'Event' => undef, # 1.21
+
+		    ##-- for sockrelay.perl
+		    'Sys::Syslog' => undef,
 		   },
 
    EXE_FILES   => [grep {$_ !~ /drip/} glob('*.perl')],
