@@ -68,7 +68,7 @@ if (!defined($log_syslog) && !defined($log_stderr)) {
 if ($help || @ARGV < 2) {
   print STDERR <<EOF;
 
-Usage: $0 [OPTIONS] [--] SOCAT_ARG(s)...
+Usage: $prog \[OPTIONS] [--] SOCAT_ARG(s)...
 
 Options:
   -h, -help           # this help message
