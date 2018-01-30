@@ -1,0 +1,3 @@
+test -z "$tagversion" \
+ && tagversion=$(perl-reversion -dryrun Makefile.PL | tail -n1 | awk '{print $5}')
+
