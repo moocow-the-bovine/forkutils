@@ -148,12 +148,12 @@ sub logcatcher {
 
 sub catcher {
   my $signame = shift;
-  vmsg(0, "caught signal $signame");
+  vmsg('fatal', "caught signal $signame");
   $h->kill_kill if ($h);
-  vmsg(0, "exiting");
+  vmsg('fatal', "exiting");
   exit 0;
 }
-$SIG{TERM} = $SIG{HUP} = $SIG{KILL} = \&catcher;
+$SIG{INT} = $SIG{KILL} = $SIG{TERM} = \&catcher;
 
 ##======================================================================
 ## MAIN
