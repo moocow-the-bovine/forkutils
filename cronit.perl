@@ -186,6 +186,8 @@ $logfh->autoflush(1) if ($logfh);
 our $cmd_str = join(' ', map {/\s/ ? qq("$_") : $_} @cmd);
 my $user     = getlogin() || [getpwuid($<)]->[0];
 my $su_user  = $ENV{SUDO_USER};
+my $group    = [getgrgid( $( )]->[0];
+my $egroup   = [getgrgid( $) )]->[0];
 my $host     = Sys::Hostname::hostname();
 my $hostname = (gethostbyname($host || 'localhost'))[0] || $host || '(unknown)';
 my $prune_min_mtime = $prune_age >= 0 ? (time()-($prune_age*24*60*60)) : undef;
@@ -193,6 +195,7 @@ my $prune_timestamp = $prune_age >= 0 ? strftime("%F %T",localtime($prune_min_mt
 logout("$prog: cmd=$cmd_str\n",
        "$prog: cwd=", cwd(), "\n",
        "$prog: user=$user", ($su_user ? " ($su_user)" : ''), "\n",
+       "$prog: group=$group ($egroup)\n",
        "$prog: host=$hostname\n",
        "$prog: echo=", ($echo ? 'yes' : 'no'), "\n",
        "$prog: dolog=", ($dolog ? 'yes' : 'no'), "\n",
