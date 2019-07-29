@@ -264,7 +264,7 @@ if ($cmd_rc==0) {
 
 ##-- gzip?
 if ($log_gzip && !$logtmp && $dolog) {
-  system('gzip',$logfile)==0
+  system(qw(gzip --force),$logfile)==0
     or warn("$0: failed to gzip log-file '$logfile': $!");
 }
 
