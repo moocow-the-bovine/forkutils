@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.13";
+our $VERSION = "0.14";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -32,8 +32,10 @@ our $workdir=undef;
 
 our @cmd=qw();
 
-our $prog   =basename($0);
-our $verbose=0;
+our $prog    =basename($0);
+our $verbose = 0;
+our $echo    = 0;
+our $dolog   = 1;
 our $ignore_child_errors =0;
 our $log_append =0;
 our $log_gzip=0;
@@ -58,6 +60,7 @@ GetOptions(##-- general
 	   'verbose|v=i' => \$verbose,
 	   'version|V' => \$version,
 	   'quiet|q' => sub { $verbose=0; },
+	   'echo|e!' => \$echo,
 
 	   ##-- process tweaking
 	   'directory|dir|d|chdir|cd=s' => \$workdir,
@@ -68,6 +71,7 @@ GetOptions(##-- general
 	   ##-- logging
 	   'log-prefix|logprefix|lp|prefix|p=s' => \$prefix,
 	   'log-file|logfile|lf|log|l=s' => \$logfile,
+	   'nolog' => sub { $dolog=0 },
 	   'log-append|append|la|a!' => \$log_append,
 	   'log-truncate|truncate|t!' => sub {$log_append=!$_[1]},
 	   'log-gzip|log-zip|lz|z!' => \$log_gzip,
@@ -105,14 +109,15 @@ sub logout {
   } else {
     $eom = 0;
   }
-  $logfh->print($msg);
-  print STDOUT $msg if ($verbose >= 1);
+  $logfh->print($msg) if ($logfh);
+  print STDOUT $msg if ($echo || $verbose >= 1);
 }
 
 ## $bool = dumplog($logfile)
 ##  + dump $logfile to STDOUT, honoring $ctxlines
 sub dumplog {
   my $logfile = shift;
+  return if (!$logfile || !$dolog);
 
   ##-- full dump
   return File::Copy::copy($logfile,\*STDOUT) if ($ctxlines <= 0);
@@ -153,7 +158,7 @@ if ($workdir) {
 
 ##-- get logfile
 our $logtmp  = 0;
-if (defined($logfile)) {
+if ($dolog && defined($logfile)) {
   ##-- auto-prune
   my $glob = $logfile;
   $glob =~ s{\{(?:DATE|TIME|DATETIME)\}}{*}g;
@@ -167,7 +172,7 @@ if (defined($logfile)) {
   ##-- open log filehandle
   my $logmode = $log_append ? '>>' : '>';
   $logfh = IO::File->new("${logmode}${logfile}") or die("$prog: open failed for logfile '$logfile', mode $logmode: $!");
-} else {
+} elsif ($dolog) {
   ##-- log to tempfile
   $logtmp = 1;
   my $tmpdir = ($ENV{TMPDIR}||$ENV{TMP}||'/tmp');
@@ -175,7 +180,7 @@ if (defined($logfile)) {
   ($logfh,$logfile) = File::Temp::tempfile('cronitXXXXXXXX', DIR=>$tmpdir, SUFFIX=>'.log', UNLINK=>1);
   die("$prog: couldn't open temporary logfile: $!") if (!defined($logfh));
 }
-$logfh->autoflush(1);
+$logfh->autoflush(1) if ($logfh);
 
 ##-- report configuration
 our $cmd_str = join(' ', map {/\s/ ? qq("$_") : $_} @cmd);
@@ -189,9 +194,14 @@ logout("$prog: cmd=$cmd_str\n",
        "$prog: cwd=", cwd(), "\n",
        "$prog: user=$user", ($su_user ? " ($su_user)" : ''), "\n",
        "$prog: host=$hostname\n",
-       "$prog: logfile=$logfile\n",
-       "$prog: log_gzip=", ($log_gzip ? 'yes' : 'no'), "\n",
-       "$prog: log_append=", ($log_append ? 'yes' : 'no'), "\n",
+       "$prog: echo=", ($echo ? 'yes' : 'no'), "\n",
+       "$prog: dolog=", ($dolog ? 'yes' : 'no'), "\n",
+       ($dolog
+	? ("$prog: logfile=$logfile\n",
+	   "$prog: log_gzip=", ($log_gzip ? 'yes' : 'no'), "\n",
+	   "$prog: log_append=", ($log_append ? 'yes' : 'no'), "\n",
+	  )
+	: qw()),
        "$prog: prune_globs=", join(' ', @prune_globs), "\n",
        "$prog: prune_age=$prune_age \[~ $prune_timestamp]\n",
        "$prog: ignore_child_errors=", ($ignore_child_errors ? 1 : 0), "\n",
@@ -205,7 +215,7 @@ if ($prune_age >= 0) {
     $pruned{$glob}=undef;
 
     logout("$prog: pruning stale file(s): $glob\n");
-    foreach my $file (grep {-w $_ && $_ ne $logfile} (glob($glob), $log_gzip ? "$glob.gz" : qw())) {
+    foreach my $file (grep {-w $_ && $_ ne ($logfile//'')} (glob($glob), $log_gzip ? "$glob.gz" : qw())) {
       my $mtime = (stat($file))[9];
       if (defined($mtime) && $mtime < $prune_min_mtime) {
 	logout("$prog: PRUNE $file\n");
@@ -236,9 +246,9 @@ if ($cmd_rc==0) {
   logout("$prog: command ($cmd_str) exited normally\n",
 	 "$prog: total time elapsed = $elapsed_str\n",
 	);
-  $logfh->close();
+  $logfh->close() if ($logfh);
 } else {
-  $logfh->close();
+  $logfh->close() if ($logfh);
   if (!$ignore_child_errors) {
     print
       ("$prog: command ($cmd_str) exited abnormally with status $cmd_rc\n",
@@ -250,7 +260,7 @@ if ($cmd_rc==0) {
 }
 
 ##-- gzip?
-if ($log_gzip && !$logtmp) {
+if ($log_gzip && !$logtmp && $dolog) {
   system('gzip',$logfile)==0
     or warn("$0: failed to gzip log-file '$logfile': $!");
 }
@@ -274,9 +284,11 @@ cronit.perl - generic logging wrapper for cron jobs
   -h,  -help               # this help message
   -V,  -version            # show version information and exit
   -v,  -verbose=LEVEL      # set verbosity level (default=0)
+  -e,  -[no]echo           # do/don't echo commands to stdout
   -q,  -quiet              # alias for -verbose=0
   -d,  -dir=DIRECTORY      # set working directory
   -l,  -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=temporary)
+       -nolog              # don't actually write a logfile
   -L,  -lines=LINES        # number of context lines to dump on error (default=-1: all)
   -p,  -prefix=PREFIX      # format logfile with strftime() PREFIX (default='%F %T ')
   -D,  -[no]dump           # do/don't dump log to stdout if CMD exits with nonzero status (default=do)
