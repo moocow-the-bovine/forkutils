@@ -42,6 +42,7 @@ our $log_gzip=0;
 our @prune_globs = qw();
 our $prune_age = -1;
 our $ctxlines = 0;
+our $umask = '';
 our ($help,$version);
 
 ##-- timing
@@ -67,6 +68,7 @@ GetOptions(##-- general
 	   'ignore-child-errors|ignore-errors|ignore|i!' => \$ignore_child_errors,
 	   'dump-errors|logdump|ld|dump|D!' => sub {$ignore_child_errors=!$_[1]},
 	   'context-lines|context|ctx|cl|L=i' => \$ctxlines,
+	   'umask|u=s' => \$umask,
 
 	   ##-- logging
 	   'log-prefix|logprefix|lp|prefix|p=s' => \$prefix,
@@ -151,6 +153,11 @@ sub dumplog {
 ##======================================================================
 ## MAIN
 
+##-- set umask if requested
+if (($umask//'') ne '') {
+  umask(oct($umask));
+}
+
 ##-- change directory if requested
 if ($workdir) {
   chdir($workdir) or die("$prog: could not chdir to '$workdir': $!");
@@ -197,6 +204,7 @@ logout("$prog: cmd=$cmd_str\n",
        "$prog: cwd=", cwd(), "\n",
        "$prog: user=$e_user".($user ne $e_user ? " (<$user)" : '')."\n",
        "$prog: group=$e_group".($group ne $e_group ? " (<$group)" : '')."\n",
+       "$prog: umask=".(sprintf("%0.4o", umask))."\n",
        "$prog: host=$hostname\n",
        "$prog: echo=", ($echo ? 'yes' : 'no'), "\n",
        "$prog: dolog=", ($dolog ? 'yes' : 'no'), "\n",
@@ -291,6 +299,7 @@ cronit.perl - generic logging wrapper for cron jobs
   -e,  -[no]echo           # do/don't echo commands to stdout
   -q,  -quiet              # alias for -verbose=0
   -d,  -dir=DIRECTORY      # set working directory
+  -u,  -umask=UMASK        # override umask (octal string)
   -l,  -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=temporary)
        -nolog              # don't actually write a logfile
   -L,  -lines=LINES        # number of context lines to dump on error (default=-1: all)
