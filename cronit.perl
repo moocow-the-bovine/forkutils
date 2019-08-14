@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.15";
+our $VERSION = "0.16";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -27,7 +27,7 @@ our $SVNID   = q(
 
 our $logfile=undef;
 our ($logfh);
-our $prefix='%F %T ';
+our $prefix='%F %T%z ';
 our $workdir=undef;
 
 our @cmd=qw();
@@ -303,7 +303,7 @@ cronit.perl - generic logging wrapper for cron jobs
   -l,  -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=temporary)
        -nolog              # don't actually write a logfile
   -L,  -lines=LINES        # number of context lines to dump on error (default=-1: all)
-  -p,  -prefix=PREFIX      # format logfile with strftime() PREFIX (default='%F %T ')
+  -p,  -prefix=PREFIX      # format logfile with strftime() PREFIX (default='%F %T%z ')
   -D,  -[no]dump           # do/don't dump log to stdout if CMD exits with nonzero status (default=do)
   -i,  -[no]ignore-errors  # inverse of -[no]dump
   -a,  -[no]append         # do/don't append to existing LOGFILE (default=don't)
