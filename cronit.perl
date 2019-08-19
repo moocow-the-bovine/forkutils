@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.16";
+our $VERSION = "0.17";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -43,6 +43,14 @@ our @prune_globs = qw();
 our $prune_age = -1;
 our $ctxlines = 0;
 our $umask = '';
+
+my $echo_filter = '';
+my $log_filter  = '';
+my ($echo_filter_re,$log_filter_re);
+my %filter_presets = (
+		      'dstar' => '\bmake\b|\*\*\*|FATAL|ERROR|WARN|INFO|DEBUG|TRACE',
+		     );
+
 our ($help,$version);
 
 ##-- timing
@@ -62,6 +70,11 @@ GetOptions(##-- general
 	   'version|V' => \$version,
 	   'quiet|q' => sub { $verbose=0; },
 	   'echo|e!' => \$echo,
+	   'echo-filter-regex|echo-filter|echofilter|echo-regex|echoregex|efr|er=s' => \$echo_filter,
+	   'echo-filter-preset|echo-preset|efp|eP=s' => sub {
+	     $echo=1;
+	     warn("$prog: unknown filter preset '$_[1]'") if (!defined($echo_filter=$filter_presets{$_[1]}));
+	   },
 
 	   ##-- process tweaking
 	   'directory|dir|d|chdir|cd=s' => \$workdir,
@@ -73,6 +86,11 @@ GetOptions(##-- general
 	   ##-- logging
 	   'log-prefix|logprefix|lp|prefix|p=s' => \$prefix,
 	   'log-file|logfile|lf|log|l=s' => \$logfile,
+	   'log-filter-regex|log-filter|logfilter|log-regex|logregex|lfr|lr=s' => \$log_filter,
+	   'log-filter-preset|log-preset|lfp|lP=s' => sub {
+	     warn("$prog: unknown filter preset '$_[1]'") if (!defined($log_filter=$filter_presets{$_[1]}));
+	   },
+
 	   'nolog' => sub { $dolog=0 },
 	   'log-append|append|la|a!' => \$log_append,
 	   'log-truncate|truncate|t!' => sub {$log_append=!$_[1]},
@@ -99,21 +117,22 @@ pod2usage({-exitval=>1, -verbose=>0, -msg=>'You must specify a command to run!'}
 ##--------------------------------------------------------------
 ## handle subprocess output
 
-our $eom=1;
+our $log_prefix = POSIX::strftime($prefix,localtime);
+our $log_buf    = '';
 sub logout {
-  my $prf = POSIX::strftime($prefix,localtime);
-  my @msg = split(/\R/,join('',@_));
-  $_      = $prf.$_ foreach (@msg[($eom ? 0 : 1)..$#msg]);
-  my $msg = join("\n",@msg);
-  if ($_[0] =~ /\R\z/) {
-    $eom = 1;
-    $msg .= "\n";
-  } else {
-    $eom = 0;
-  }
-  $logfh->print($msg) if ($logfh);
-  print STDOUT $msg if ($echo || $verbose >= 1);
+  my @msg = split(/\R/,join('',$log_buf,@_));
+  $log_buf = (@msg && $_[$#_] !~ /\R\z/) ? pop(@msg) : '';
+
+  $log_prefix = POSIX::strftime($prefix,localtime);
+  logout_fh($logfh,   $log_filter_re, @msg) if ($logfh);
+  logout_fh(\*STDOUT, $echo_filter_re,@msg) if ($echo || $verbose >= 1);
 }
+
+sub logout_fh {
+  my ($fh,$filter_re,@lines) = @_;
+  print $fh map {$log_prefix.$_."\n"} grep {!$filter_re || $_ =~ $filter_re} @lines;
+}
+
 
 ## $bool = dumplog($logfile)
 ##  + dump $logfile to STDOUT, honoring $ctxlines
@@ -207,17 +226,23 @@ logout("$prog: cmd=$cmd_str\n",
        "$prog: umask=".(sprintf("%0.4o", umask))."\n",
        "$prog: host=$hostname\n",
        "$prog: echo=", ($echo ? 'yes' : 'no'), "\n",
+       ($echo_filter ? "$prog: echo_filter=$echo_filter\n" : qw()),
        "$prog: dolog=", ($dolog ? 'yes' : 'no'), "\n",
        ($dolog
 	? ("$prog: logfile=$logfile\n",
 	   "$prog: log_gzip=", ($log_gzip ? 'yes' : 'no'), "\n",
 	   "$prog: log_append=", ($log_append ? 'yes' : 'no'), "\n",
+	   ($log_filter ? "$prog: log_filter=$log_filter\n" : qw()),
 	  )
 	: qw()),
        "$prog: prune_globs=", join(' ', @prune_globs), "\n",
        "$prog: prune_age=$prune_age \[~ $prune_timestamp]\n",
        "$prog: ignore_child_errors=", ($ignore_child_errors ? 1 : 0), "\n",
       );
+
+##-- compile filter regexes if requested
+$echo_filter_re = qr{$echo_filter} if ($echo_filter);
+$log_filter_re  = qr{$log_filter} if ($log_filter);
 
 ##-- prune?
 if ($prune_age >= 0) {
@@ -297,11 +322,16 @@ cronit.perl - generic logging wrapper for cron jobs
   -V,  -version            # show version information and exit
   -v,  -verbose=LEVEL      # set verbosity level (default=0)
   -e,  -[no]echo           # do/don't echo commands to stdout
+  -er, -echo-regex=REGEX   # only echo lines matching REGEX (default: all)
+       -echo-preset=CLASS  # echo-filter preset aliases:
+                           #  Preset  Filter-Regex
+                           #  dstar   \bmake\b|\*\*\*|FATAL|ERROR|WARN|INFO|DEBUG|TRACE
   -q,  -quiet              # alias for -verbose=0
   -d,  -dir=DIRECTORY      # set working directory
   -u,  -umask=UMASK        # override umask (octal string)
   -l,  -logfile=LOGFILE    # redirect stdout,stderr to LOGFILE (default=temporary)
        -nolog              # don't actually write a logfile
+  -lr, -log-regex=REGEX    # only log lines matching REGEX (default: all)
   -L,  -lines=LINES        # number of context lines to dump on error (default=-1: all)
   -p,  -prefix=PREFIX      # format logfile with strftime() PREFIX (default='%F %T%z ')
   -D,  -[no]dump           # do/don't dump log to stdout if CMD exits with nonzero status (default=do)
