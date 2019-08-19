@@ -1,0 +1,24 @@
+---
+
+- name: deploy forkutils on dstar-all hosts
+  connection: ssh
+  #gather_facts: false
+  hosts: dstar-all
+  #hosts: www.dwds.de
+  tasks:
+
+    - name: svn update
+      shell: svn up dstar/cabx/forkutils #-- expect warnings
+
+    - name: build
+      shell: perl Makefile.PL </dev/null && make && make test
+      args:
+        chdir: /home/ddc-dstar/dstar/cabx/forkutils
+
+    - name: install
+      become: true
+      become_user: root
+      become_method: sudo
+      shell: make install
+      args:
+        chdir: /home/ddc-dstar/dstar/cabx/forkutils
