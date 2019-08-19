@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.17";
+our $VERSION = "0.18";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -48,7 +48,14 @@ my $echo_filter = '';
 my $log_filter  = '';
 my ($echo_filter_re,$log_filter_re);
 my %filter_presets = (
-		      'dstar' => '\bmake\b|\*\*\*|FATAL|ERROR|WARN|INFO|DEBUG|TRACE',
+		      'make' => '\bmake\b|\*\*\*',
+		      'make-error' => '\bmake\b|\*\*\*|FATAL|ERROR',
+		      'make-errors' => '\bmake\b|\*\*\*|FATAL|ERROR',
+		      'make-warn' => '\bmake\b|\*\*\*|FATAL|ERROR|WARN',
+		      'make-warnings' => '\bmake\b|\*\*\*|FATAL|ERROR|WARN',
+		      'make-info' => '\bmake\b|\*\*\*|FATAL|ERROR|WARN|INFO',
+		      'make-debug' => '\bmake\b|\*\*\*|FATAL|ERROR|WARN|INFO|DEBUG',
+		      'make-trace' => '\bmake\b|\*\*\*|FATAL|ERROR|WARN|INFO|DEBUG|TRACE',
 		     );
 
 our ($help,$version);
@@ -324,8 +331,13 @@ cronit.perl - generic logging wrapper for cron jobs
   -e,  -[no]echo           # do/don't echo commands to stdout
   -er, -echo-regex=REGEX   # only echo lines matching REGEX (default: all)
        -echo-preset=CLASS  # echo-filter preset aliases:
-                           #  Preset  Filter-Regex
-                           #  dstar   \bmake\b|\*\*\*|FATAL|ERROR|WARN|INFO|DEBUG|TRACE
+                           #  Preset     Filter-Regex
+		           #  make       \bmake\b|\*\*\*
+		           #  make-error \bmake\b|\*\*\*|FATAL|ERROR
+		           #  make-warn  \bmake\b|\*\*\*|FATAL|ERROR|WARN
+		           #  make-info  \bmake\b|\*\*\*|FATAL|ERROR|WARN|INFO
+		           #  make-debug \bmake\b|\*\*\*|FATAL|ERROR|WARN|INFO|DEBUG
+		           #  make-trace \bmake\b|\*\*\*|FATAL|ERROR|WARN|INFO|DEBUG|TRACE
   -q,  -quiet              # alias for -verbose=0
   -d,  -dir=DIRECTORY      # set working directory
   -u,  -umask=UMASK        # override umask (octal string)
