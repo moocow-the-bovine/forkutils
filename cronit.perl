@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.18";
+our $VERSION = "0.19";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -296,10 +296,13 @@ if ($cmd_rc==0) {
   if (!$ignore_child_errors) {
     print
       ("$prog: command ($cmd_str) exited abnormally with status $cmd_rc\n",
-       "$prog: log dump ($logfile", ($ctxlines>=0 ? ", $ctxlines context line(s)" : qw()), "):\n",
-       ("-" x 80), "\n",
-      );
-    dumplog($logfile);
+       ($logfile
+	? (
+	   "$prog: log dump ($logfile", ($ctxlines>=0 ? ", $ctxlines context line(s)" : qw()), "):\n",
+	   ("-" x 80), "\n",
+	  )
+	: qw()));
+      dumplog($logfile);
   }
 }
 
