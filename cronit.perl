@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.19";
+our $VERSION = "0.20";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -40,7 +40,8 @@ our $ignore_child_errors =0;
 our $log_append =0;
 our $log_gzip=0;
 our @prune_globs = qw();
-our $prune_age = -1;
+our $prune_age  = -1; ##-- maximum age (days) of old log-files to keep
+our $prune_keep = -1; ##-- maximum number of old log-files to keep (most recent)
 our $ctxlines = 0;
 our $umask = '';
 
@@ -104,7 +105,8 @@ GetOptions(##-- general
 	   'log-gzip|log-zip|lz|z!' => \$log_gzip,
 	   'log-prune-glob|prune-glob|lpg|pg=s' => \@prune_globs,
 	   'log-prune-age|prune-age|lpa|pa=i' => \$prune_age,
-	   'nolog-prune|noprune|nop|P' => sub { $prune_age=-1; @prune_globs=qw() },
+           'log-prune-keep|prune-keep|lpk|pk=i' => \$prune_keep,
+	   'nolog-prune|noprune|nop|P' => sub { $prune_age=$prune_keep=-1; @prune_globs=qw() },
 	  );
 
 
@@ -244,6 +246,7 @@ logout("$prog: cmd=$cmd_str\n",
 	: qw()),
        "$prog: prune_globs=", join(' ', @prune_globs), "\n",
        "$prog: prune_age=$prune_age \[~ $prune_timestamp]\n",
+       "$prog: prune_keep=$prune_keep\n",
        "$prog: ignore_child_errors=", ($ignore_child_errors ? 1 : 0), "\n",
       );
 
@@ -252,24 +255,41 @@ $echo_filter_re = qr{$echo_filter} if ($echo_filter);
 $log_filter_re  = qr{$log_filter} if ($log_filter);
 
 ##-- prune?
-if ($prune_age >= 0) {
-  my %pruned = qw();
-  foreach my $glob (@prune_globs, ($log_gzip ? (map {"$_.gz"} @prune_globs) : qw())) {
-    next if (exists($pruned{$glob}));
-    $pruned{$glob}=undef;
+if ($prune_age >= 0 || $prune_keep >= 0) {
 
-    logout("$prog: pruning stale file(s): $glob\n");
+  ##-- get pruning candidates
+  my (%old_files);
+  foreach my $glob (@prune_globs, ($log_gzip ? (map {"$_.gz"} @prune_globs) : qw())) {
+    logout("$prog: searching for stale file(s): $glob\n");
     foreach my $file (grep {-w $_ && $_ ne ($logfile//'')} (glob($glob), $log_gzip ? "$glob.gz" : qw())) {
-      my $mtime = (stat($file))[9];
-      if (defined($mtime) && $mtime < $prune_min_mtime) {
-	logout("$prog: PRUNE $file\n");
-	unlink($file)
-	  or logout("$prog: WARNING: failed to prune file '$file': $!\n");
-      }
-      #else {
-      #  logout("$prog: KEEP $file\n");
-      #}
+      $old_files{$file} = {file=>$file, prune=>undef, mtime=>(stat($file))[9]};
     }
+  }
+  my @old_files = sort {$b->{mtime} <=> $a->{mtime}} values(%old_files);
+
+  ##-- only prune those old log-files which exceed $prune_age threshold (if specified)
+  if ($prune_age >= 0) {
+    $_->{prune} = ($_->{mtime} < $prune_min_mtime)||0 foreach (@old_files);
+  }
+
+  ##-- always keep up to $prune_keep old log-files (if specified)
+  if ($prune_keep >= 0) {
+    $_->{prune} //= 1 foreach (@old_files); ##-- in case user specified only $prune_keep
+    for (my $fi=0; $fi < $prune_keep && $fi <= $#old_files; ++$fi) {
+      $old_files[$fi]{prune} = 0;
+    }
+  }
+
+  ##-- actually prune selected files
+  foreach my $f (@old_files) {
+    if ($f->{prune}) {
+      logout("$prog: PRUNE $f->{file}\n");
+      unlink($f->{file})
+        or logout("$prog: WARNING: failed to prune file '$f->{file}': $!\n");
+    }
+    #else {
+    #  logout("$prog: KEEP $f->{file}\n");
+    #}
   }
 }
 
@@ -356,6 +376,7 @@ cronit.perl - generic logging wrapper for cron jobs
   -z,  -[no]gzip           # do/don't gzip successful logs (default=don't)
   -pg, -prune-glob=GLOB    # select old log-files for potential pruning (default from LOGFILE)
   -pa, -prune-age=DAYS     # prune old files with mtime >= DAYS day(s) (default=-1: no pruning)
+  -pk, -prune-keep=NKEEP   # keep NKEEP most recent old files (default=-1: no pruning)
   -P,  -noprune            # don't prune any old files (default)
 
  Bells & Whistles:
@@ -404,7 +425,7 @@ Not yet written.
 
 =head1 COPYRIGHT
 
-Copyright (c) 2012-2014, Bryan Jurish.  All rights reserved.
+Copyright (c) 2012-2020, Bryan Jurish.  All rights reserved.
 
 This package is free software.  You may redistribute it
 and/or modify it under the same terms as Perl itself, either
