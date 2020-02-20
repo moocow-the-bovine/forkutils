@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.20";
+our $VERSION = "0.21";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -35,6 +35,7 @@ our @cmd=qw();
 our $prog    =basename($0);
 our $verbose = 0;
 our $echo    = 0;
+our $echo_stamp = 1; ##-- echo timestamps?
 our $dolog   = 1;
 our $ignore_child_errors =0;
 our $log_append =0;
@@ -78,11 +79,13 @@ GetOptions(##-- general
 	   'version|V' => \$version,
 	   'quiet|q' => sub { $verbose=0; },
 	   'echo|e!' => \$echo,
+	   'echo-stamp|es!' => \$echo_stamp,
 	   'echo-filter-regex|echo-filter|echofilter|echo-regex|echoregex|efr|er=s' => \$echo_filter,
 	   'echo-filter-preset|echo-preset|efp|eP=s' => sub {
 	     $echo=1;
 	     warn("$prog: unknown filter preset '$_[1]'") if (!defined($echo_filter=$filter_presets{$_[1]}));
 	   },
+
 
 	   ##-- process tweaking
 	   'directory|dir|d|chdir|cd=s' => \$workdir,
@@ -134,6 +137,8 @@ sub logout {
 
   $log_prefix = POSIX::strftime($prefix,localtime);
   logout_fh($logfh,   $log_filter_re, @msg) if ($logfh);
+
+  $log_prefix = '' if (!$echo_stamp);
   logout_fh(\*STDOUT, $echo_filter_re,@msg) if ($echo || $verbose >= 1);
 }
 
@@ -352,6 +357,7 @@ cronit.perl - generic logging wrapper for cron jobs
   -V,  -version            # show version information and exit
   -v,  -verbose=LEVEL      # set verbosity level (default=0)
   -e,  -[no]echo           # do/don't echo commands to stdout
+  -es, -[no]echo-stamp     # do/don't echo timestamps to stdout (default: do)
   -er, -echo-regex=REGEX   # only echo lines matching REGEX (default: all)
        -echo-preset=CLASS  # echo-filter preset aliases:
                            #  Preset     Filter-Regex
