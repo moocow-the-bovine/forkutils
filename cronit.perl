@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.21";
+our $VERSION = "0.22";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -121,6 +121,18 @@ pod2usage({-exitval=>0, -verbose=>0}) if ($help);
 @cmd = @ARGV;
 
 pod2usage({-exitval=>1, -verbose=>0, -msg=>'You must specify a command to run!'}) if (!@cmd);
+
+##======================================================================
+## IPC::Run overrides
+
+##-- override IPC::Run::start() method to log child PID
+*ipc_run_start_orig = \&IPC::Run::start;
+*IPC::Run::start = \&ipc_run_start_hacked;
+sub ipc_run_start_hacked {
+  my $self = ipc_run_start_orig(@_);
+  logout("$prog: kids=", join(' ', map {($_->{PID}//'-1')} @{$self->{KIDS}//[]}), "\n") if ($self);
+  return $self;
+}
 
 
 ##======================================================================
@@ -253,6 +265,7 @@ logout("$prog: cmd=$cmd_str\n",
        "$prog: prune_age=$prune_age \[~ $prune_timestamp]\n",
        "$prog: prune_keep=$prune_keep\n",
        "$prog: ignore_child_errors=", ($ignore_child_errors ? 1 : 0), "\n",
+       "$prog: pid=$$\n",
       );
 
 ##-- compile filter regexes if requested
@@ -298,7 +311,7 @@ if ($prune_age >= 0 || $prune_keep >= 0) {
   }
 }
 
-##-- open subprocess
+##-- open & run subprocess
 IPC::Run::run(\@cmd, '<', \undef, '>&', \&logout);
 our $cmd_rc = ($?>>8);
 
