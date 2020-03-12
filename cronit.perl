@@ -126,8 +126,11 @@ pod2usage({-exitval=>1, -verbose=>0, -msg=>'You must specify a command to run!'}
 ## IPC::Run overrides
 
 ##-- override IPC::Run::start() method to log child PID
-*ipc_run_start_orig = \&IPC::Run::start;
-*IPC::Run::start = \&ipc_run_start_hacked;
+BEGIN {
+  no warnings 'redefine';
+  *ipc_run_start_orig = \&IPC::Run::start;
+  *IPC::Run::start = \&main::ipc_run_start_hacked;
+}
 sub ipc_run_start_hacked {
   my $self = ipc_run_start_orig(@_);
   logout("$prog: kids=", join(' ', map {($_->{PID}//'-1')} @{$self->{KIDS}//[]}), "\n") if ($self);

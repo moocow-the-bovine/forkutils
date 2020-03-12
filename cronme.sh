@@ -9,4 +9,4 @@ echo "bonk" >&2
 #sleep 1
 echo "boffo"
 echo "blippo"
-exit 1
+#exit 1
