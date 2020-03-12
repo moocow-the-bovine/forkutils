@@ -1,10 +1,20 @@
 ---
 
-- name: deploy forkutils on dstar-all hosts
-  connection: ssh
+# File: dstar-deploy-playbook.yml
+# Author: Bryan Jurish <jurish@bbaw.de>
+# Description: deploy new forkutils on dstar-all hosts
+# Usage:
+#  ansible-playbook -K -i ~/dstar/admin/hosts dstar-deploy-playbook.yml -e 'hosts=dstar-all'
+
+- name: deploy forkutils on selected hosts (default=dstar-all)
   #gather_facts: false
-  hosts: dstar-all
   #hosts: www.dwds.de
+  #hosts: dstar-all
+  hosts: "{{ hosts | default('dstar-all') }}"
+  connection: ssh
+  vars:
+    hosts: dstar-all
+
   tasks:
 
     - name: svn update
