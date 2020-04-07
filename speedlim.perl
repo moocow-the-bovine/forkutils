@@ -23,11 +23,13 @@ BEGIN {
 our $prog = basename($0);
 my $interval = 1;
 my $watch = 0;
+my $blank_lines = 0;
 my ($help);
 GetOptions(##-- general
-	   'help|h' => \$help,
-	   'interval|i|limit|l|poll|p=i' => \$interval,
-	   'watch|w!' => \$watch,
+	   'h|help' => \$help,
+	   'i|interval|l|limit|p|poll=i' => \$interval,
+	   'w|watch!' => \$watch,
+	   'b|blanks!' => \$blank_lines,
 	  );
 
 if ($help) {
@@ -36,9 +38,10 @@ if ($help) {
 Usage: $prog \[OPTIONS] [FILE]
 
  Options:
-   -help        # this help message
-   -limit SECS  # maximum inter-message interval (default=1)
-   -[no]watch   # do/don't continue at EOF (stdin only, default=-nowatch)
+   -h, -help        # this help message
+   -l, -limit SECS  # maximum inter-message interval (default=1)
+   -w, -[no]watch   # do/don't continue at EOF (stdin only, default=-nowatch)
+   -b, -[no]blanks  # do/don't trim blank lines (default=do)
 
 EOF
   exit 0;
@@ -64,10 +67,12 @@ sub last_line {
     seek($fh, -$chunksize, SEEK_CUR);
     unshift(@bufs,'');
     read($fh, $bufs[0], $chunksize);
+    $bufs[0] =~ s/\n+/\n/g if (!$blank_lines);
     chomp($bufs[0]) if (@bufs==1);
     seek($fh, -$chunksize, SEEK_CUR);
   }
   $buf = join('',@bufs);
+  $buf =~ s/\n+/\n/g if (!$blank_lines);
   chomp($buf);
   $buf =~ s/.*\n//s;
   return $buf."\n";
