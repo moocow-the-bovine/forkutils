@@ -105,7 +105,7 @@ GetOptions(##-- general
 	   'nolog' => sub { $dolog=0 },
 	   'log-append|append|la|a!' => \$log_append,
 	   'log-truncate|truncate|t!' => sub {$log_append=!$_[1]},
-	   'log-gzip|log-zip|lz|z!' => \$log_gzip,
+	   'log-gzip|log-zip|lz|gzip|gz|z!' => \$log_gzip,
 	   'log-prune-glob|prune-glob|lpg|pg=s' => \@prune_globs,
 	   'log-prune-age|prune-age|lpa|pa=i' => \$prune_age,
            'log-prune-keep|prune-keep|lpk|pk=i' => \$prune_keep,
