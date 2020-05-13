@@ -19,7 +19,7 @@ use strict;
 
 ##--------------------------------------------------------------
 ## Globals
-our $VERSION = "0.22";
+our $VERSION = "0.23";
 our $SVNID   = q(
   $HeadURL$
   $Id$
@@ -349,6 +349,25 @@ if ($cmd_rc==0) {
 
 ##-- gzip?
 if ($log_gzip && !$logtmp && $dolog) {
+  if ($log_append && -e "$logfile.gz") {
+    ##-- append + gzip
+    open(my $oldfh, '-|', qw(gunzip -c),"$logfile.gz")
+      or die("$0: failed to open previous logfile '$logfile.gz' for append+gzip: $!");
+    open(my $tmpfh, ">$logfile.tmp")
+      or die("$0: failed to open temporary logfile '$logfile.tmp' for append+gzip: $!");
+    File::Copy::copy($oldfh, $tmpfh)
+	or die("$0: failed to copy old log data from '$logfile.gz' to '$logfile.tmp' for append+gzip: $!");
+    File::Copy::copy($logfile, $tmpfh)
+	or die("$0: failed to copy current log data from '$logfile.gz' to '$logfile.tmp' for append+gzip: $!");
+    close($oldfh);
+    close($tmpfh)
+      or die("$0: failed to close temporary logfile '$logfile.tmp' for append+gzip: $!");
+    unlink($logfile)
+      or die("$0: failed to unlink current logfile '$logfile' for append+gzip: $!");
+    rename("$logfile.tmp",$logfile)
+      or die("$0: failed to rename temporary logfile '$logfile.tmp' to '$logfile' for append+gzip: $!");
+  }
+  ##-- truncate+gzip: easy
   system(qw(gzip --force),$logfile)==0
     or warn("$0: failed to gzip log-file '$logfile': $!");
 }
