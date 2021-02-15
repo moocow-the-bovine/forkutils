@@ -13,23 +13,23 @@ WriteMakefile
    VERSION	=> $VERSION,
 
    PREREQ_PM    => {
-		    'Date::Format' => undef,
-		    'File::Basename' => undef,
-		    'Getopt::Long' => undef,
-		    'Pod::Usage' => undef,
-		    'English' => undef,
+		    'Date::Format' => 0,
+		    'File::Basename' => 0,
+		    'Getopt::Long' => 0,
+		    'Pod::Usage' => 0,
+		    'English' => 0,
 
 		    ##-- for cronit.perl
-		    'POSIX' => undef,
-		    'File::Temp' => undef,
-		    'File::Copy' => undef,
-		    'IPC::Run' => undef,
+		    'POSIX' => 0,
+		    'File::Temp' => 0,
+		    'File::Copy' => 0,
+		    'IPC::Run' => 0,
 
 		    ##-- for speedlim.perl
-		    'Event' => undef, # 1.21
+		    'Event' => 0, # 1.21
 
 		    ##-- for sockrelay.perl
-		    'Sys::Syslog' => undef,
+		    'Sys::Syslog' => 0,
 		   },
 
    EXE_FILES   => [grep {$_ !~ /drip/} glob('*.perl')],
