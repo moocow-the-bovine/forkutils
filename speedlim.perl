@@ -24,12 +24,14 @@ our $prog = basename($0);
 my $interval = 1;
 my $watch = 0;
 my $blank_lines = 0;
+my $max_width = -1;
 my ($help);
 GetOptions(##-- general
-	   'h|help' => \$help,
-	   'i|interval|l|limit|p|poll=i' => \$interval,
-	   'w|watch!' => \$watch,
-	   'b|blanks!' => \$blank_lines,
+           'h|help' => \$help,
+           'i|interval|l|limit|p|poll=i' => \$interval,
+           'w|watch!' => \$watch,
+           'b|blanks!' => \$blank_lines,
+           'c|cols|columns|chars=i' => \$max_width,
 	  );
 
 if ($help) {
@@ -42,6 +44,7 @@ Usage: $prog \[OPTIONS] [FILE]
    -l, -limit SECS  # maximum inter-message interval (default=1)
    -w, -[no]watch   # do/don't continue at EOF (stdin only, default=-nowatch)
    -b, -[no]blanks  # do/don't trim blank lines (default=do)
+   -c, -cols NCOLS  # display at most NCOLS characters per line (default=-1:all)
 
 EOF
   exit 0;
@@ -55,6 +58,12 @@ EOF
 
 sub min2 { return $_[0] < $_[1] ? $_[0] : $_[1]; }
 sub max2 { return $_[0] > $_[1] ? $_[0] : $_[1]; }
+
+sub trim_width {
+  return $_[0] if ($max_width <= 0 || length($_[0]) <= $max_width);
+  my $line = shift;
+  return substr($line, 0, int($max_width/2)) . '...' . substr($line, length($line) - max2(1, int($max_width/2)));
+}
 
 my $blksize = 1024;
 sub last_line {
@@ -85,7 +94,7 @@ sub watch_file {
   my $prev_size = 0;
   while (1) {
     $cur_size = (-s $fh);
-    print last_line($fh) if ($cur_size != $prev_size);
+    print trim_width(last_line($fh)) if ($cur_size != $prev_size);
     $prev_size = $cur_size;
     sleep $interval;
   }
@@ -96,7 +105,7 @@ sub watch_file {
 
 our $msg;
 sub cb_timer {
-  print $msg if (defined($msg));
+  print trim_width($msg) if (defined($msg));
   $msg = undef;
 }
 
@@ -114,7 +123,7 @@ sub watch_stdin {
   Event->io(fd=>fileno(STDIN), poll=>'r', cb=>\&cb_io);
   my $rc = loop();
   die("$0: loop failed with exit status $rc") if ($rc != 0);
-  print $msg if (defined($msg));
+  print trim_width($msg) if (defined($msg));
 }
 
 ##======================================================================
